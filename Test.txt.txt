@@ -1,3 +1,6 @@
+<<<<<<< HEAD
 test of
 
 hg
+=======
+>>>>>>> parent of d67f9a2 (Zak)
