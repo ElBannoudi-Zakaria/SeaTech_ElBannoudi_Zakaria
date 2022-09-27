@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
-    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="2">
+        <file>
+            <url>main.c</url>
+            <bookmark id="2">
+                <name/>
+                <line>37</line>
+                <key/>
+            </bookmark>
+        </file>
+    </editor-bookmarks>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
-        <group>
-            <file>file:/C:/Users/TP-EO-1/Desktop/Projet_ElBannoudi_Zakaria/20220921_Robot_Elbannoudi/carte_moteur_ElBannoudi.X/main.c</file>
-            <file>file:/C:/Users/TP-EO-1/Desktop/Projet_ElBannoudi_Zakaria/20220921_Robot_Elbannoudi/carte_moteur_ElBannoudi.X/IO.h</file>
-            <file>file:/C:/Users/TP-EO-1/Desktop/Projet_ElBannoudi_Zakaria/20220921_Robot_Elbannoudi/carte_moteur_ElBannoudi.X/IO.c</file>
-        </group>
+        <group/>
     </open-files>
 </project-private>
