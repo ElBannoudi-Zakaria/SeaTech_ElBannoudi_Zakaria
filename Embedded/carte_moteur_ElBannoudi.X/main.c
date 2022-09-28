@@ -12,6 +12,7 @@
 #include "timer.h"
 #include "IO.h"
 #include "PWM.h"
+#include "ADC.h"
 
 int main(void) {   
   
@@ -32,6 +33,7 @@ int main(void) {
     LED_ORANGE = 1;
     
     InitPWM();
+    InitADC1();
     // Boucle P r i n c i p a l e    
     while(1) {
        
