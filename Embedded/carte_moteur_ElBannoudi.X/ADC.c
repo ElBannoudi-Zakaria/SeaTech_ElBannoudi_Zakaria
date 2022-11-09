@@ -3,7 +3,7 @@
 
 
 unsigned char ADCResultIndex = 0;
-static unsigned int ADCResult[4];
+static unsigned int ADCResult[5];
 unsigned char ADCConversionFinishedFlag;
 
 /****************************************************************************************************/
@@ -29,7 +29,7 @@ AD1CON1bits.SSRC = 0b111; // 111 = Internal counter ends sampling and starts con
 AD1CON2bits.VCFG = 0b000; // 000 : Voltage Reference = AVDD AVss
 AD1CON2bits.CSCNA = 1; // 1 : Enable Channel Scanning
 AD1CON2bits.CHPS = 0b00; // Converts CH0 only
-AD1CON2bits.SMPI = 2; // 2+1 conversions successives avant interrupt
+AD1CON2bits.SMPI = 4; // 2+1 conversions successives avant interrupt
 AD1CON2bits.ALTS = 0;
 AD1CON2bits.BUFM = 0;
 
@@ -83,7 +83,6 @@ ADCResult[1] = ADC1BUF1;// Read the AN3 conversion result
 ADCResult[2] = ADC1BUF2;// Read the AN5 conversion result
 ADCResult[3] = ADC1BUF3;// Read the AN conversion result
 ADCResult[4] = ADC1BUF4;// Read the AN conversion result
-
 
 ADCConversionFinishedFlag = 1;
 }
