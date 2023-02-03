@@ -345,7 +345,14 @@ int main(void) {
                 LED_ORANGE = 0;
             }
             
-           SendMessage((unsigned char*) "Bonjour", 7);
+           //SendMessage((unsigned char*) "Bonjour", 7);
+            int i;
+            for(i=0; i< CB_RX1_GetDataSize(); i++)
+            {
+                unsigned char c = CB_RX1_Get();
+                SendMessage(&c,1);
+            }
+            __delay32(1000);
             
         }
 
