@@ -17,10 +17,125 @@
 #include "Robot.h"
 #include "UART.h"
 #include "CB_TX1.h"
+#include "CB_RX1.h"
 unsigned char stateRobot;
 unsigned char stateSensor;
 
 int vitesse = 30;
+
+int main(void) {
+
+    //? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
+    // I n i t i a l i s a t i o n   de   l ? o s c i l l a t e u r
+    //? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
+    InitOscillator();
+    //? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
+    // C o n f i g u r a t i o n   d e s   é e n t r e s   s o r t i e s
+    //? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
+    InitIO();
+
+    InitTimer23();
+    InitTimer1(50);
+    InitTimer4(1000);
+
+    LED_BLANCHE = 1;
+    LED_BLEUE = 1;
+    LED_ORANGE = 1;
+
+    InitPWM();
+    InitADC1();
+    InitUART();
+    // Boucle P r i n c i p a l e    
+    while (1) {
+        int i;
+        for (i = 0; i < CB_RX1_GetDataSize(); i++) {
+            unsigned char c = CB_RX1_Get();
+            SendMessage(&c, 1);
+        }
+
+        if (ADCIsConversionFinished() == 1) {
+            ADCClearConversionFinishedFlag();
+            unsigned int * result = ADCGetResult();
+
+            float volts = ((float) result[0])*3.3 / 4096 * 3.2;
+            robotState.distanceTelemetreExtDroit = 34 / volts - 5;
+
+            volts = ((float) result[1]) * 3.3 / 4096 * 3.2;
+            robotState.distanceTelemetreDroit = 34 / volts - 5;
+
+            volts = ((float) result[2]) * 3.3 / 4096 * 3.2;
+            robotState.distanceTelemetreCentre = 34 / volts - 5;
+
+            volts = ((float) result[4])*3.3 / 4096 * 3.2;
+            robotState.distanceTelemetreGauche = 34 / volts - 5;
+
+            volts = ((float) result[3])*3.3 / 4096 * 3.2;
+            robotState.distanceTelemetreExtGauche = 34 / volts - 5;
+
+
+            stateSensor = 0;
+            if (robotState.distanceTelemetreExtGauche < 20) {
+                stateSensor = stateSensor | 0b00001;
+            }
+            if (robotState.distanceTelemetreGauche < 25) {
+                stateSensor = stateSensor | 0b00010;
+            }
+            if (robotState.distanceTelemetreCentre < 25) {
+                stateSensor = stateSensor | 0b00100;
+            }
+            if (robotState.distanceTelemetreDroit < 25) {
+                stateSensor = stateSensor | 0b01000;
+            }
+            if (robotState.distanceTelemetreExtDroit < 20) {
+                stateSensor = stateSensor | 0b10000;
+            }
+
+
+
+            if (robotState.distanceTelemetreGauche < 20 || robotState.distanceTelemetreExtGauche < 20) {
+                LED_BLANCHE = 1;
+            } else {
+                LED_BLANCHE = 0;
+            }
+            if (robotState.distanceTelemetreCentre < 20) {
+                LED_BLEUE = 1;
+            } else {
+                LED_BLEUE = 0;
+            }
+            if (robotState.distanceTelemetreDroit < 20 || robotState.distanceTelemetreExtDroit < 20) {
+                LED_ORANGE = 1;
+            } else {
+                LED_ORANGE = 0;
+            }
+        }
+
+
+
+        /*    if ( ADCValue0 >= 353) {
+                LED_BLANCHE=1;
+            }else{
+                LED_BLANCHE=0;
+            }
+         
+            if ( ADCValue1 >= 353) {
+                LED_BLEUE=1;
+            }else{
+                LED_BLEUE=0;
+            }
+        
+            if ( ADCValue2 >= 353) {
+                LED_ORANGE=1;
+            }else{
+                LED_ORANGE=0;
+            }*/
+        //
+        //__delay32(40000000);
+
+
+    }
+
+
+} // f i n main
 
 void OperatingSystemLoop(void) {
     switch (stateRobot) {
@@ -258,130 +373,5 @@ void SetNextRobotStateInAutomaticMode() {
     if (nextStateRobot != stateRobot - 1)
         stateRobot = nextStateRobot;
 }
-
-int main(void) {
-
-    //? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
-    // I n i t i a l i s a t i o n   de   l ? o s c i l l a t e u r
-    //? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
-    InitOscillator();
-    //? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
-    // C o n f i g u r a t i o n   d e s   é e n t r e s   s o r t i e s
-    //? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
-    InitIO();
-
-    InitTimer23();
-    InitTimer1(50);
-    InitTimer4(1000);
-
-    LED_BLANCHE = 1;
-    LED_BLEUE = 1;
-    LED_ORANGE = 1;
-
-    InitPWM();
-    InitADC1();
-    InitUART();
-    // Boucle P r i n c i p a l e    
-    while (1) {
-        /*if (ADCIsConversionFinished() == 1) {
-            ADCClearConversionFinishedFlag();
-            unsigned int * result = ADCGetResult();
-            ADCValue0 = result[0];
-            ADCValue1 = result[1];
-            ADCValue2 = result[2];}*/
-
-        if (ADCIsConversionFinished() == 1) {
-            ADCClearConversionFinishedFlag();
-            unsigned int * result = ADCGetResult();
-
-            float volts = ((float) result[0])*3.3 / 4096 * 3.2;
-            robotState.distanceTelemetreExtDroit = 34 / volts - 5;
-
-            volts = ((float) result[1]) * 3.3 / 4096 * 3.2;
-            robotState.distanceTelemetreDroit = 34 / volts - 5;
-
-            volts = ((float) result[2]) * 3.3 / 4096 * 3.2;
-            robotState.distanceTelemetreCentre = 34 / volts - 5;
-
-            volts = ((float) result[4])*3.3 / 4096 * 3.2;
-            robotState.distanceTelemetreGauche = 34 / volts - 5;
-
-            volts = ((float) result[3])*3.3 / 4096 * 3.2;
-            robotState.distanceTelemetreExtGauche = 34 / volts - 5;
-
-
-            stateSensor = 0;
-            if (robotState.distanceTelemetreExtGauche < 20) {
-                stateSensor = stateSensor | 0b00001;
-            }
-            if (robotState.distanceTelemetreGauche < 25) {
-                stateSensor = stateSensor | 0b00010;
-            }
-            if (robotState.distanceTelemetreCentre < 25) {
-                stateSensor = stateSensor | 0b00100;
-            }
-            if (robotState.distanceTelemetreDroit < 25) {
-                stateSensor = stateSensor | 0b01000;
-            }
-            if (robotState.distanceTelemetreExtDroit < 20) {
-                stateSensor = stateSensor | 0b10000;
-            }
-
-
-
-            if (robotState.distanceTelemetreGauche < 20 || robotState.distanceTelemetreExtGauche < 20) {
-                LED_BLANCHE = 1;
-            } else {
-                LED_BLANCHE = 0;
-            }
-            if (robotState.distanceTelemetreCentre < 20) {
-                LED_BLEUE = 1;
-            } else {
-                LED_BLEUE = 0;
-            }
-            if (robotState.distanceTelemetreDroit < 20 || robotState.distanceTelemetreExtDroit < 20) {
-                LED_ORANGE = 1;
-            } else {
-                LED_ORANGE = 0;
-            }
-            
-           //SendMessage((unsigned char*) "Bonjour", 7);
-            int i;
-            for(i=0; i< CB_RX1_GetDataSize(); i++)
-            {
-                unsigned char c = CB_RX1_Get();
-                SendMessage(&c,1);
-            }
-            __delay32(1000);
-            
-        }
-
-
-
-        /*    if ( ADCValue0 >= 353) {
-                LED_BLANCHE=1;
-            }else{
-                LED_BLANCHE=0;
-            }
-         
-            if ( ADCValue1 >= 353) {
-                LED_BLEUE=1;
-            }else{
-                LED_BLEUE=0;
-            }
-        
-            if ( ADCValue2 >= 353) {
-                LED_ORANGE=1;
-            }else{
-                LED_ORANGE=0;
-            }*/
-        //
-        //__delay32(40000000);
-
-
-    }
-
-
-} // f i n main
 
 
