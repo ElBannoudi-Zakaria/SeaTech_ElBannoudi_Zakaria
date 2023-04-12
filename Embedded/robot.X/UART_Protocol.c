@@ -32,7 +32,7 @@ void UartEncodeAndSendMessage(int msgFunction,int msgPayloadLength, unsigned cha
                 msg[5 + i] = msgPayload[i];
             }
             msg[5 + msgPayloadLength] = UartCalculateChecksum(msgFunction, msgPayloadLength, msgPayload);
-            SendMessageDirect(msg, msgPayloadLength + 6);
+            SendMessage(msg, msgPayloadLength + 6);
             //serialPort1.Write(msg, 0, msg.Length);
             //IR_Droit.Content += "ok";//Encoding.UTF8.GetString(msg,0,msg.Length);
 }
