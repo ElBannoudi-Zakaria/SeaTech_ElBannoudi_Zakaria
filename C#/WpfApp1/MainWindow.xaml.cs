@@ -23,12 +23,14 @@ namespace WpfApp1
     /// Logique d'interaction pour MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
+
     {
         ReliableSerialPort serialPort1;
         DispatcherTimer timerAffichage;
+        //string receivedText;
 
         Robot robot = new Robot();
-        //string robot.receivedText;
+
 
         public MainWindow()
         {
@@ -41,6 +43,7 @@ namespace WpfApp1
             timerAffichage.Interval = new TimeSpan(0, 0, 0, 0, 100);
             timerAffichage.Tick += TimerAffichage_Tick;
             timerAffichage.Start();
+
         }
 
         private void TimerAffichage_Tick(object sender, EventArgs e)
@@ -49,60 +52,93 @@ namespace WpfApp1
             {
                 byte c = robot.byteListReceived.Dequeue();
                 DecodeMessage(c);
-                //textBoxReception.Text += "0x" + c.ToString("X2") + " ";
+                //textBoxReception.Text += val.ToString();
             }
         }
 
-
-
         private void SerialPort1_DataReceived(object sender, DataReceivedArgs e)
         {
-            robot.receivedText += Encoding.UTF8.GetString(e.Data, 0, e.Data.Length);
+
+
+            //robot.receivedText += Encoding.UTF8.GetString(e.Data, 0, e.Data.Length);
             for (int i = 0; i < e.Data.Length; i++)
             {
                 robot.byteListReceived.Enqueue(e.Data[i]);
             }
-
         }
 
-        private void buttonEnvoyer_Click(object sender, RoutedEventArgs e)
+
+
+        bool toggle;
+        private void ButtonEnvoyer_Click_1(object sender, RoutedEventArgs e)
         {
-            //textBoxReception.Text += textBoxEmission.Text;
-            //textBoxEmission.Text = "\n";
+            if (toggle)
+                ButtonEnvoyer.Background = Brushes.RoyalBlue;
+            else ButtonEnvoyer.Background = Brushes.Beige;
+            toggle = !toggle;
+            SendMessage();
 
-            serialPort1.WriteLine(textBoxEmission.Text);
-            textBoxEmission.Text = "\n";
+
 
         }
 
-        private void textBoxEmission_KeyUp(object sender, KeyEventArgs e)
+        private void SendMessage()
+        {
+            serialPort1.WriteLine(textBoxEmission.Text);
+            textBoxEmission.Text = "";
+
+
+        }
+
+
+        private void TextBox_KeyUp(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
-                buttonEnvoyer_Click(sender, e);
-
+                SendMessage();
             }
-
-
         }
 
-        private void buttonClear_Click(object sender, RoutedEventArgs e)
+
+
+        private void button_Click(object sender, RoutedEventArgs e)
         {
             textBoxReception.Text = "";
         }
 
         byte[] byteList = new byte[20];
+        private object unsigned;
 
-        private void buttonTest_Click(object sender, RoutedEventArgs e)
+
+
+
+
+        private void Test_Click(object sender, RoutedEventArgs e)
         {
-            //for (int i = 0; i < 20; i++)
+            // int i;
+            //for (int i= 0; i < 20; i++)
             //{
-            //    byteList[i] = (byte)(2 * i);
+            //    byteList[i] = (byte)(2*i);
             //}
             //serialPort1.Write(byteList, 0, byteList.Length);
+
             byte[] array = Encoding.ASCII.GetBytes("Bonjour");
-            UartEncodeAndSendMessage(0x1234, array.Length, array);
+            UartEncodeAndSendMessage(0x0080, array.Length, array);
+
+            byte[] LED = new byte[] { 3, 1 };
+            UartEncodeAndSendMessage(0x0020, LED.Length, LED);
+            
+            byte[] DistIR = new byte[] { 5, 10, 15 };
+            UartEncodeAndSendMessage(0x0030, DistIR.Length, DistIR);
+
+            byte[] Vitesses = new byte[] { 25, 30 };
+            UartEncodeAndSendMessage(0x0040, Vitesses.Length, Vitesses);
+
         }
+
+
+
+        /////////////////////////////////////////////////////////////////  TRAME
 
         byte CalculateChecksum(int msgFunction, int msgPayloadLength, byte[] msgPayload)
         {
@@ -115,13 +151,15 @@ namespace WpfApp1
             for (int i = 0; i < msgPayloadLength; i++)
             {
                 checksum ^= msgPayload[i];
+
             }
             return checksum;
+
         }
 
         void UartEncodeAndSendMessage(int msgFunction, int msgPayloadLength, byte[] msgPayload)
         {
-            byte[] msg = new byte[6 + msgPayloadLength];
+            byte[] msg = new byte[msgPayloadLength + 6];
             msg[0] = 0xFE;
             msg[1] = (byte)(msgFunction >> 8);
             msg[2] = (byte)(msgFunction >> 0);
@@ -132,8 +170,11 @@ namespace WpfApp1
                 msg[5 + i] = msgPayload[i];
             }
             msg[5 + msgPayloadLength] = CalculateChecksum(msgFunction, msgPayloadLength, msgPayload);
+
             serialPort1.Write(msg, 0, msg.Length);
+            //IR_Droit.Content += "ok";//Encoding.UTF8.GetString(msg,0,msg.Length);
         }
+
 
 
         public enum StateReception
@@ -151,7 +192,8 @@ namespace WpfApp1
         int msgDecodedFunction = 0;
         int msgDecodedPayloadLength = 0;
         byte[] msgDecodedPayload;
-        int msgDecodedPayloadIndex = 0;
+        int msgDecodedPayloadIndex = 0; //pointeur ou on ecrit
+
         private void DecodeMessage(byte c)
         {
 
@@ -178,20 +220,20 @@ namespace WpfApp1
                     break;
                 case StateReception.PayloadLengthLSB:
                     msgDecodedPayloadLength += c << 0;
-                    rcvState = StateReception.Payload;
-                    break;
-                case StateReception.Payload:
-                    if (msgDecodedPayloadIndex < msgDecodedPayloadLength)
-                    {
-                        msgDecodedPayload[msgDecodedPayloadIndex] = c;
-                        msgDecodedPayloadIndex += 1;
-                        rcvState = StateReception.Payload;
-
-                    }
+                    if (msgDecodedPayloadLength == 0)
+                        rcvState = StateReception.CheckSum;
                     else
                     {
-                        rcvState = StateReception.CheckSum;
+                        rcvState = StateReception.Payload;
+                        msgDecodedPayloadIndex = 0;
+                        msgDecodedPayload = new byte[msgDecodedPayloadLength];
                     }
+                    break;
+                case StateReception.Payload:
+                    msgDecodedPayload[msgDecodedPayloadIndex] = c;
+                    msgDecodedPayloadIndex++;
+                    if (msgDecodedPayloadIndex >= msgDecodedPayloadLength)
+                        rcvState = StateReception.CheckSum;
                     break;
 
                 case StateReception.CheckSum:
@@ -200,13 +242,83 @@ namespace WpfApp1
                     if (calculatedChecksumvaleur == receivedChecksum)
                     {
                         textBoxReception.Text += "Message bien reçu";
+                        ProcessDecodedMessage(msgDecodedFunction, msgDecodedPayloadLength, msgDecodedPayload);
+
                     }
-                    textBoxReception.Text += "Message corrompu";
+                    else
+                        textBoxReception.Text += "Message corrompu";
+                    rcvState = StateReception.Waiting;
                     break;
                 default:
                     rcvState = StateReception.Waiting;
                     break;
             }
         }
+
+
+        void ProcessDecodedMessage(int msgFunction, int msgPayloadLength, byte[] msgPayload)
+        {
+            switch (msgFunction)
+            {
+                case 0x0080:
+                    textBoxReception.Text = Encoding.ASCII.GetString(msgPayload);
+                    break;
+                case 0x0020:
+                    if (msgPayload[0] == (byte)(1))
+                        if (msgPayload[1] == (byte)(1))
+                            CheckBoxLed1.IsChecked = true;
+                        else
+                            CheckBoxLed1.IsChecked = false;
+                    else if (msgPayload[0] == (byte)(2))
+                        if (msgPayload[1] == (byte)(1))
+                            CheckBoxLed2.IsChecked = true;
+                        else
+                            CheckBoxLed2.IsChecked = false;
+                    else 
+                        if (msgPayload[1] == (byte)(1))
+                            CheckBoxLed3.IsChecked = true;
+                        else
+                            CheckBoxLed3.IsChecked = false;
+                    break;
+                case 0x0030:
+
+                    Label_IR_Gauche.Content = msgPayload[0];
+                    Label_IR_Centre.Content = msgPayload[1];
+                    Label_IR_Droit.Content = msgPayload[2];
+                    break;
+                case 0x0040:
+                    Label_VitesseGauche.Content= msgPayload[0];
+                    Label_VitesseDroit.Content = msgPayload[1];
+
+
+                    break;
+            }
+        }
+
+        private void Led1_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void Led2_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void Led3_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void VitesseCentre_TextChanged(object sender, TextChangedEventArgs e)
+        {
+
+        }
+
+        private void TextBox_IR_Gauche_TextChanged(object sender, TextChangedEventArgs e)
+        {
+
+        }
     }
 }
+
